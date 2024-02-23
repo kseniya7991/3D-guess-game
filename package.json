@@ -1,0 +1,22 @@
+{
+  "name": "bowling-three",
+  "version": "1.0.0",
+  "description": "3D Болуинг на библиотеке Three.js с использованием физики Physi.js",
+  "main": "vite.confog.js",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build"
+  },
+  "author": "kseniya",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.20"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "cannon-es-debugger": "^1.0.0",
+    "lil-gui": "^0.19.1",
+    "three": "^0.161.0",
+    "vite": "^5.1.4"
+  }
+}
