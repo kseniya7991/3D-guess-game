@@ -3,11 +3,16 @@ import GUI from "lil-gui";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as CANNON from "cannon-es";
 import CannonDebugger from "cannon-es-debugger";
+import Stats from "stats-gl";
 
 /**
  * Debug
  */
 const gui = new GUI();
+
+const stats = new Stats();
+// append the stats container to the body of the document
+document.body.appendChild(stats.dom);
 
 /**
  * Base
@@ -86,7 +91,7 @@ const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
 const defaultMaterial = new CANNON.Material("default");
 const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defaultMaterial, {
     friction: 1,
-    restitution: 0,
+    restitution: 0.5,
 });
 
 world.addContactMaterial(defaultContactMaterial);
@@ -94,7 +99,8 @@ world.defaultContactMaterial = defaultContactMaterial;
 
 let boxSize = { w: 0.5, h: 0.5, d: 0.5 };
 let boxesData = [];
-let updateObjects = [];
+let updateObjectsBoxes = [];
+let updateObjectsSpheres = [];
 
 /**
  * Create wall
@@ -145,7 +151,7 @@ const createBoxes = (count) => {
         });
         world.addBody(body);
 
-        updateObjects.push({
+        updateObjectsBoxes.push({
             mesh: boxMesh,
             body,
         });
@@ -153,6 +159,7 @@ const createBoxes = (count) => {
 };
 
 const sphereSize = 1;
+
 /**
  * Create a simple sphere
  * @returns
@@ -173,7 +180,24 @@ const createSphere = (position) => {
     });
     world.addBody(body);
 
-    updateObjects.push({
+    let isSphereCollideWithBoxes = false;
+    const collideHandler = (event) => {
+        let isSphereCollideWithBoxes = updateObjectsBoxes.some((box) => {
+            return box.body.id === event.contact.bj.id;
+        });
+
+        console.log("Шар столкнулся с боксами");
+
+        if (isSphereCollideWithBoxes) {
+            // Условие выполнено, удаляем слушатель
+            body.removeEventListener("collide", collideHandler);
+            removeSpringConstraints();
+        }
+    };
+
+    body.addEventListener("collide", collideHandler);
+
+    updateObjectsSpheres.push({
         mesh: sphereMesh,
         body,
     });
@@ -188,34 +212,53 @@ const createWallsFromBoxes = () => {
     createWall(4, 1, { x: boxSize.w * -2, y: 0.5, z: boxSize.d * -2 });
     createWall(4, 1, { x: boxSize.w * 2, y: 0.5, z: boxSize.d * -1 });
     createWall(4, 1, { x: boxSize.w * 2, y: 0.5, z: boxSize.d * -2 });
-
     createBoxes(boxCount);
 
-    console.log();
+    createSpringConstraints();
+};
 
-    // Создание пружинных ограничителей между боксами
-    function createSpringConstraints() {
-        const springConstant = 0.01; // Константа пружины
-        const damping = 0.00000001; // Параметр демпфирования
+/**
+ * Constraints
+ */
+const springConstraints = [];
 
-        for (let i = 0; i < updateObjects.length; i++) {
-            for (let j = i + 1; j < updateObjects.length; j++) {
-                const bodyA = updateObjects[i].body;
-                const bodyB = updateObjects[j].body;
+// Create spring constraints
+const createSpringConstraints = () => {
+    const springConstant = 0.1; // Константа пружины
+    const damping = 0.00000001; // Параметр демпфирования
 
-                const constraint = new CANNON.Spring(bodyA, bodyB, {
-                    restLength: 0, // Длина пружины в покое
-                    stiffness: springConstant, // Жесткость пружины
-                    damping: damping, // Демпфирование
-                });
+    for (let i = 0; i < updateObjectsBoxes.length; i++) {
+        for (let j = i + 1; j < updateObjectsBoxes.length; j++) {
+            const bodyA = updateObjectsBoxes[i].body;
+            const bodyB = updateObjectsBoxes[j].body;
 
-                world.addEventListener("postStep", (event) => {
-                    constraint.applyForce();
-                });
-            }
+            const constraint = new CANNON.Spring(bodyA, bodyB, {
+                restLength: 0, // Длина пружины в покое
+                stiffness: springConstant, // Жесткость пружины
+                damping: damping, // Демпфирование
+            });
+
+            // Добавление ограничителя пружины в массив
+            springConstraints.push(constraint);
         }
     }
-    createSpringConstraints();
+    world.addEventListener("postStep", applySpringForce);
+};
+
+//ApplyForce for Contstraints
+const applySpringForce = () => {
+    for (const constraint of springConstraints) {
+        constraint.applyForce();
+    }
+};
+
+// Remove all Scpring Constraints
+const removeSpringConstraints = () => {
+    for (const constraint of springConstraints) {
+        world.removeEventListener("postStep", applySpringForce);
+    }
+    // Очистка массива ограничителей пружины
+    springConstraints.length = 0;
 };
 
 const fillSpheres = () => {
@@ -228,9 +271,17 @@ const fillSpheres = () => {
 };
 
 createWallsFromBoxes();
-// fillSpheres();
+fillSpheres();
 
-console.log(updateObjects);
+// Определите столкновение шара с землей
+world.addEventListener("collide", (event) => {
+    const contact = event.contact; // Получите информацию о контакте
+
+    /*  if (contact.bi.id === ballBody.id || contact.bj.id === ballBody.id) {
+      // Шар столкнулся с землей
+      console.log('Шар столкнулся с землей');
+    } */
+});
 
 /**
  * Lights
@@ -303,6 +354,8 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.setSize(canvasSize.width, canvasSize.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
+stats.init(renderer);
+
 /**
  * Animate
  */
@@ -318,14 +371,16 @@ const tick = () => {
     //Update Physics
     world.step(1 / 60, deltaTime, 3);
 
-    for (const object of updateObjects) {
-        if (elapsedTime < 0.01) {
-            console.log(object.body.position);
-        }
+    for (const object of updateObjectsBoxes) {
+        object.mesh.position.copy(object.body.position);
+        object.mesh.quaternion.copy(object.body.quaternion);
+    }
+    for (const object of updateObjectsSpheres) {
         object.mesh.position.copy(object.body.position);
         object.mesh.quaternion.copy(object.body.quaternion);
     }
 
+    //Update Debugger
     cannonDebugger.update();
 
     //Update Controls
@@ -333,6 +388,9 @@ const tick = () => {
 
     //Renderer
     renderer.render(scene, camera);
+
+    //Update Stats
+    stats.update();
 
     window.requestAnimationFrame(tick);
 };
