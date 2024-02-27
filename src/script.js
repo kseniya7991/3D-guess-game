@@ -5,10 +5,14 @@ import * as CANNON from "cannon-es";
 import CannonDebugger from "cannon-es-debugger";
 import Stats from "stats-gl";
 
+//Import Lights
+import { directionalLight, ambientLight, directionalLightHelper } from "./Lights";
+
 /**
  * Debug
  */
 const gui = new GUI();
+const debugObj = {};
 
 const stats = new Stats();
 // append the stats container to the body of the document
@@ -25,20 +29,34 @@ const canvas = document.querySelector("canvas.webgl");
  * Physics
  */
 const world = new CANNON.World();
+world.gravity.set(0, -9.82, 0);
 
-//Optimization
+//World Optimization
 world.broadphase = new CANNON.SAPBroadphase(world);
 world.allowSleep = true;
 
-world.gravity.set(0, -9.82, 0);
+/**
+ * Debugger
+ */
+debugObj.debugger = false;
+gui.add(debugObj, "debugger");
 
-const cannonDebugger = CannonDebugger(scene, world, {
+const debugOptions = {
     scale: 1,
-});
+    onUpdate: (body, mesh) => {
+        mesh.visible = debugObj.debugger;
+    },
+};
+const cannonDebugger = CannonDebugger(scene, world, debugOptions);
 
 /**
  * Textures
  */
+const textureLoader = new THREE.TextureLoader();
+const boxTexture = textureLoader.load("/matcaps/box.png");
+const sphereTexture = textureLoader.load("/matcaps/sphere.png");
+boxTexture.colorSpace = THREE.SRGBColorSpace;
+sphereTexture.colorSpace = THREE.SRGBColorSpace;
 
 /**
  * Objects
@@ -46,10 +64,11 @@ const cannonDebugger = CannonDebugger(scene, world, {
 
 //Floor
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
+    new THREE.PlaneGeometry(20, 20),
     new THREE.MeshStandardMaterial({
-        metalness: 0.5,
-        roughness: 0.5,
+        color: "#edf5ff",
+        metalness: 0,
+        roughness: 1,
     })
 );
 floor.rotation.set(-Math.PI * 0.5, 0, 0);
@@ -57,10 +76,13 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 //Physic Floor
-const floorShape = new CANNON.Plane();
-const floorBody = new CANNON.Body();
+// const floorShape = new CANNON.Plane();
+const floorShape = new CANNON.Box(new CANNON.Vec3(10, 0.01, 10));
+const floorBody = new CANNON.Body({
+    mass: 0,
+});
 floorBody.addShape(floorShape);
-floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
+// floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 0, 0), Math.PI * 0.5);
 world.addBody(floorBody);
 
 //Sphere
@@ -79,18 +101,25 @@ sphere.position.set(0, 0.5, 0);
 // scene.add(sphere);
 
 //Default Materials and Geometries
-const defaultMeshMaterial = new THREE.MeshStandardMaterial({
-    color: "#b0b0b0",
+const defaultMeshMaterial = new THREE.MeshMatcapMaterial({
+    matcap: boxTexture,
+});
+const defaultSpheresMaterial = new THREE.MeshStandardMaterial({
+    color: "red",
     metalness: 0.5,
     roughness: 0.2,
 });
+const defaultSphereBallMaterial = new THREE.MeshMatcapMaterial({
+    matcap: sphereTexture,
+});
+
 const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
 
 //Physics Materials
 const defaultMaterial = new CANNON.Material("default");
 const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defaultMaterial, {
-    friction: 1,
+    friction: 0.2,
     restitution: 0.5,
 });
 
@@ -120,7 +149,7 @@ const createWall = (rows, cols, wallPosition) => {
                 z = wallPosition.z + 0.05;
             }
             let xShift = i % 2 === 0 ? -0.1 : 0;
-            let position = { x: x + wallPosition.x + xShift, y: boxSize.h * 0.5 + 0.2 + boxSize.h * i, z };
+            let position = { x: x + wallPosition.x + xShift, y: boxSize.h * 0.5 + boxSize.h * i, z };
             boxesData.push(position);
         }
     }
@@ -158,44 +187,33 @@ const createBoxes = (count) => {
     }
 };
 
-const sphereSize = 1;
+const spheresColors = [
+    new THREE.Color("#18f000"),
+    new THREE.Color("#f000d8"),
+    new THREE.Color("#fcf403"),
+    new THREE.Color("#055af7"),
+];
 
 /**
  * Create a simple sphere
  * @returns
  */
-const createSphere = (position) => {
-    const sphereMesh = new THREE.Mesh(sphereGeometry, defaultMeshMaterial);
+const createSphere = (position, size, mass = 0.1) => {
+    const sphereMesh = new THREE.Mesh(sphereGeometry, defaultSpheresMaterial);
+
     sphereMesh.castShadow = true;
-    sphereMesh.scale.set(sphereSize, sphereSize, sphereSize);
+    sphereMesh.scale.set(size, size, size);
     sphereMesh.position.copy(position);
     scene.add(sphereMesh);
 
     //Physics
-    const shape = new CANNON.Sphere(sphereSize);
+    const shape = new CANNON.Sphere(size);
     const body = new CANNON.Body({
-        mass: 1000,
+        mass,
         position,
         shape,
     });
-    world.addBody(body);
-
-    let isSphereCollideWithBoxes = false;
-    const collideHandler = (event) => {
-        let isSphereCollideWithBoxes = updateObjectsBoxes.some((box) => {
-            return box.body.id === event.contact.bj.id;
-        });
-
-        console.log("Шар столкнулся с боксами");
-
-        if (isSphereCollideWithBoxes) {
-            // Условие выполнено, удаляем слушатель
-            body.removeEventListener("collide", collideHandler);
-            removeSpringConstraints();
-        }
-    };
-
-    body.addEventListener("collide", collideHandler);
+    // world.addBody(body);
 
     updateObjectsSpheres.push({
         mesh: sphereMesh,
@@ -203,15 +221,71 @@ const createSphere = (position) => {
     });
 };
 
-const createWallsFromBoxes = () => {
-    let boxCount = 56;
+/**
+ * Created a shot ball with force
+ */
+const createShotBall = () => {
+    const size = 0.7;
+    let position = { x: 0, y: 0.9, z: 5 };
+    //Mesh
+    const sphereMesh = new THREE.Mesh(sphereGeometry, defaultSphereBallMaterial);
+    sphereMesh.castShadow = true;
+    sphereMesh.scale.set(size, size, size);
+    sphereMesh.position.copy(position);
 
-    createWall(4, 5, { x: 0, y: 0.5, z: 0 });
-    createWall(4, 5, { x: 0, y: 0.5, z: boxSize.d * -3 });
-    createWall(4, 1, { x: boxSize.w * -2, y: 0.5, z: boxSize.d * -1 });
-    createWall(4, 1, { x: boxSize.w * -2, y: 0.5, z: boxSize.d * -2 });
-    createWall(4, 1, { x: boxSize.w * 2, y: 0.5, z: boxSize.d * -1 });
-    createWall(4, 1, { x: boxSize.w * 2, y: 0.5, z: boxSize.d * -2 });
+    sphereMesh.position.z = 5;
+    scene.add(sphereMesh);
+
+    //Body
+    //Physics
+    const shape = new CANNON.Sphere(size);
+    const body = new CANNON.Body({
+        mass: 50,
+        position: new CANNON.Vec3(position.x, position.y, position.z),
+        shape,
+    });
+    body.applyLocalForce(new CANNON.Vec3(0, 0, -60000), new CANNON.Vec3(0, 0, 0));
+
+    //Detect collide with boxes
+    let isSphereCollideWithBoxes = false;
+    const collideHandler = (event) => {
+        let isSphereCollideWithBoxes = updateObjectsBoxes.some((box) => {
+            return box.body.id === event.contact.bj.id;
+        });
+
+        if (isSphereCollideWithBoxes) {
+            console.log("Шар столкнулся");
+            // Условие выполнено, удаляем слушатель
+            body.removeEventListener("collide", collideHandler);
+            removeSpringConstraints();
+            addSpeheresToWorld();
+        }
+    };
+
+    body.addEventListener("collide", collideHandler);
+    world.addBody(body);
+
+    updateObjectsSpheres.push({
+        mesh: sphereMesh,
+        body,
+    });
+};
+
+const addSpeheresToWorld = () => {
+    for (const obj of updateObjectsSpheres) {
+        world.addBody(obj.body);
+    }
+};
+
+const createWallsFromBoxes = () => {
+    let boxCount = 200;
+
+    createWall(4, 5, { x: 0, y: 0, z: 0 });
+    createWall(4, 5, { x: 0, y: 0, z: boxSize.d * -3 });
+    createWall(4, 1, { x: boxSize.w * -2, y: 0, z: boxSize.d * -1 });
+    createWall(4, 1, { x: boxSize.w * -2, y: 0, z: boxSize.d * -2 });
+    createWall(4, 1, { x: boxSize.w * 2, y: 0, z: boxSize.d * -1 });
+    createWall(4, 1, { x: boxSize.w * 2, y: 0, z: boxSize.d * -2 });
     createBoxes(boxCount);
 
     createSpringConstraints();
@@ -225,7 +299,7 @@ const springConstraints = [];
 // Create spring constraints
 const createSpringConstraints = () => {
     const springConstant = 0.1; // Константа пружины
-    const damping = 0.00000001; // Параметр демпфирования
+    const damping = 0.01; // Параметр демпфирования
 
     for (let i = 0; i < updateObjectsBoxes.length; i++) {
         for (let j = i + 1; j < updateObjectsBoxes.length; j++) {
@@ -261,50 +335,39 @@ const removeSpringConstraints = () => {
     springConstraints.length = 0;
 };
 
+/**
+ * Fill spheres in the box
+ */
 const fillSpheres = () => {
-    let count = 1;
+    const countWidth = 5;
+    const countHeight = 6;
+    const countDepth = 3;
+    const allCount = countWidth * countHeight * countDepth;
+    const sphereSize = 0.15;
 
-    for (let i = 0; i < count; i++) {
-        let position = { x: Math.random() * 0.5, y: 10, z: boxSize.d * -1.5 };
-        createSphere(position);
+    let color = Math.round(Math.random() * 3);
+    defaultSpheresMaterial.color = spheresColors[color];
+
+    for (let i = 0; i < allCount; i++) {
+        let shiftX = sphereSize * 2 - (countWidth / 2) * sphereSize * 2;
+        let shiftZ = -0.9;
+        let x = -sphereSize + (i % countWidth) * sphereSize * 2;
+        let y = sphereSize + Math.floor((i % (countWidth * countHeight)) / countWidth) * sphereSize * 2;
+        let z = -sphereSize + Math.floor(i / (countWidth * countHeight)) * sphereSize * 2;
+
+        let position = { x: x + shiftX, y, z: z + shiftZ };
+        console.log(color);
+        createSphere(position, sphereSize);
     }
 };
 
 createWallsFromBoxes();
 fillSpheres();
 
-// Определите столкновение шара с землей
-world.addEventListener("collide", (event) => {
-    const contact = event.contact; // Получите информацию о контакте
-
-    /*  if (contact.bi.id === ballBody.id || contact.bj.id === ballBody.id) {
-      // Шар столкнулся с землей
-      console.log('Шар столкнулся с землей');
-    } */
-});
-
 /**
  * Lights
  */
-
-//Abmient Light
-const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-scene.add(ambientLight);
-
-//Directional Light
-const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-directionalLight.position.set(2, 2, 2);
-directionalLight.castShadow = true;
-directionalLight.shadow.mapSize.set(1024, 1024);
-directionalLight.shadow.camera.far = 10;
-directionalLight.shadow.camera.left = -1;
-directionalLight.shadow.camera.right = 3;
-directionalLight.shadow.camera.top = 2;
-directionalLight.shadow.camera.bottom = -2;
-
-const directionalLightHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
-directionalLightHelper.visible = false;
-scene.add(directionalLight, directionalLightHelper);
+scene.add(ambientLight, directionalLight, directionalLightHelper);
 
 /**
  * Sizes
@@ -333,7 +396,13 @@ window.addEventListener("resize", () => {
  * Camera
  */
 const camera = new THREE.PerspectiveCamera(75, canvasSize.width / canvasSize.height, 0.1, 100);
-camera.position.set(0, 3, 7);
+camera.position.set(0, 2, 10);
+
+debugObj.startShotBall = () => {
+    createShotBall();
+};
+gui.add(debugObj, "startShotBall").name("Start Shot Ball");
+
 /**
  * Controls
  */
@@ -353,6 +422,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.setSize(canvasSize.width, canvasSize.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor("#edf5ff");
 
 stats.init(renderer);
 
