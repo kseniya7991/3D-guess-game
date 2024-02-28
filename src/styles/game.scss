@@ -1,0 +1,137 @@
+.game {
+    z-index: -1;
+
+    font-weight: 400;
+    font-style: normal;
+
+    font-family: "Bruno Ace SC", sans-serif;
+
+    &__score {
+        display: flex;
+        min-width: 80px;
+
+        &-wrap {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+
+            font-size: 50px;
+        }
+    }
+
+    &__guess {
+        &-wrap {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            background-color: rgba(0, 0, 0, 0.2);
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            transition-property: opacity;
+            transition-duration: 0.3s;
+
+            &.hidden {
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
+
+        &-title {
+            font-size: 30px;
+            color: white;
+
+            text-transform: uppercase;
+        }
+
+        &-colors {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+
+            margin-top: 40px;
+
+            display: flex;
+            align-items: center;
+
+            flex-wrap: wrap;
+
+            margin-right: -40px;
+            margin-bottom: -40px;
+
+            width: calc((150px * 3) + 40px * 3);
+
+            &.hover {
+                .guess-color:not(.active) {
+                    opacity: 0.3;
+                }
+            }
+        }
+    }
+
+    .guess-color {
+        width: 150px;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        cursor: pointer;
+
+        position: relative;
+
+        padding-right: 40px;
+        padding-bottom: 40px;
+
+        transition-property: opacity;
+        transition-duration: 0.3s;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        &:nth-of-type(1) {
+            .guess-color__color {
+                background-color: #18f000;
+            }
+        }
+        &:nth-of-type(2) {
+            .guess-color__color {
+                background-color: #ffc0cb;
+            }
+        }
+        &:nth-of-type(3) {
+            .guess-color__color {
+                background-color: #007fff;
+            }
+        }
+
+        &__color {
+            width: 80px;
+            height: 80px;
+
+            border-radius: 50%;
+        }
+
+        &__text {
+            color: white;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+    }
+}

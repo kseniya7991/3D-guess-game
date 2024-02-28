@@ -4,9 +4,24 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as CANNON from "cannon-es";
 import CannonDebugger from "cannon-es-debugger";
 import Stats from "stats-gl";
+import "../styles/index.scss";
 
 //Import Lights
 import { directionalLight, ambientLight, directionalLightHelper } from "./Lights";
+
+//Import Textures
+import { boxTexture, sphereTexture } from "./Textures";
+
+//Import Game
+import { initGame } from "./Game";
+
+const game = initGame();
+game?.wrap.addEventListener("selectColor", () => {
+    resetScene();
+
+    createWallsFromBoxes();
+    fillSpheres();
+});
 
 /**
  * Debug
@@ -50,25 +65,22 @@ const debugOptions = {
 const cannonDebugger = CannonDebugger(scene, world, debugOptions);
 
 /**
- * Textures
- */
-const textureLoader = new THREE.TextureLoader();
-const boxTexture = textureLoader.load("/matcaps/box.png");
-const sphereTexture = textureLoader.load("/matcaps/sphere.png");
-boxTexture.colorSpace = THREE.SRGBColorSpace;
-sphereTexture.colorSpace = THREE.SRGBColorSpace;
-
-/**
  * Objects
  */
 
-//Floor
+/**
+ * Floor
+ */
+
+const floorSize = { width: 20, height: 20 };
+
+//Mesh Floor
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(20, 20),
+    new THREE.PlaneGeometry(floorSize.width, floorSize.height),
     new THREE.MeshStandardMaterial({
         color: "#edf5ff",
-        metalness: 0,
-        roughness: 1,
+        metalness: 0.5,
+        roughness: 0.5,
     })
 );
 floor.rotation.set(-Math.PI * 0.5, 0, 0);
@@ -76,43 +88,42 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 //Physic Floor
-// const floorShape = new CANNON.Plane();
-const floorShape = new CANNON.Box(new CANNON.Vec3(10, 0.01, 10));
-const floorBody = new CANNON.Body({
-    mass: 0,
-});
+const floorShape = new CANNON.Box(new CANNON.Vec3(floorSize.width / 2, 0.01, floorSize.height / 2));
+const floorBody = new CANNON.Body({ mass: 0 });
 floorBody.addShape(floorShape);
-// floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 0, 0), Math.PI * 0.5);
 world.addBody(floorBody);
 
-//Sphere
-const sphere = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5, 32, 32),
-    new THREE.MeshStandardMaterial({
-        color: "#88dafc",
-        metalness: 0,
-        roughness: 0,
-    })
-);
-
-sphere.castShadow = true;
-sphere.position.set(0, 0.5, 0);
-
-// scene.add(sphere);
-
+/**
+ * Common Materials and Geometries
+ */
 //Default Materials and Geometries
-const defaultMeshMaterial = new THREE.MeshMatcapMaterial({
-    matcap: boxTexture,
-});
+
+const spheresColors = [
+    {
+        name: "green",
+        value: new THREE.Color("#18f000"),
+    },
+    {
+        name: "pink",
+        value: new THREE.Color("#FFC0CB"),
+    },
+
+    {
+        name: "blue",
+        value: new THREE.Color("#007FFF"),
+    },
+];
+
+//Materials
+const defaultBoxMaterial = new THREE.MeshMatcapMaterial({ matcap: boxTexture });
+const defaultSphereBallMaterial = new THREE.MeshMatcapMaterial({ matcap: sphereTexture });
 const defaultSpheresMaterial = new THREE.MeshStandardMaterial({
-    color: "red",
+    color: spheresColors[0].value,
     metalness: 0.5,
     roughness: 0.2,
 });
-const defaultSphereBallMaterial = new THREE.MeshMatcapMaterial({
-    matcap: sphereTexture,
-});
 
+//Geometries
 const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
 
@@ -125,6 +136,10 @@ const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defau
 
 world.addContactMaterial(defaultContactMaterial);
 world.defaultContactMaterial = defaultContactMaterial;
+
+/**
+ * Create Scene
+ */
 
 let boxSize = { w: 0.5, h: 0.5, d: 0.5 };
 let boxesData = [];
@@ -162,7 +177,7 @@ const createWall = (rows, cols, wallPosition) => {
 const createBoxes = (count) => {
     for (let i = 0; i < count; i++) {
         //Mesh
-        const boxMesh = new THREE.Mesh(boxGeometry, defaultMeshMaterial);
+        const boxMesh = new THREE.Mesh(boxGeometry, defaultBoxMaterial);
         boxMesh.castShadow = true;
         boxMesh.receiveShadow = true;
         boxMesh.scale.set(boxSize.w, boxSize.h, boxSize.d);
@@ -187,13 +202,6 @@ const createBoxes = (count) => {
     }
 };
 
-const spheresColors = [
-    new THREE.Color("#18f000"),
-    new THREE.Color("#f000d8"),
-    new THREE.Color("#fcf403"),
-    new THREE.Color("#055af7"),
-];
-
 /**
  * Create a simple sphere
  * @returns
@@ -213,7 +221,6 @@ const createSphere = (position, size, mass = 0.1) => {
         position,
         shape,
     });
-    // world.addBody(body);
 
     updateObjectsSpheres.push({
         mesh: sphereMesh,
@@ -224,9 +231,13 @@ const createSphere = (position, size, mass = 0.1) => {
 /**
  * Created a shot ball with force
  */
-const createShotBall = () => {
+const createShotBall = (e) => {
+    let targetEl = e.target;
+    if (targetEl.closest(".lil-gui")) return;
+    let mouseX = e.clientX;
+    const xPosition = (mouseX * floorSize.width) / canvasSize.width - floorSize.width / 2;
     const size = 0.7;
-    let position = { x: 0, y: 0.9, z: 5 };
+    let position = { x: xPosition, y: 0.9, z: 5 };
     //Mesh
     const sphereMesh = new THREE.Mesh(sphereGeometry, defaultSphereBallMaterial);
     sphereMesh.castShadow = true;
@@ -247,18 +258,17 @@ const createShotBall = () => {
     body.applyLocalForce(new CANNON.Vec3(0, 0, -60000), new CANNON.Vec3(0, 0, 0));
 
     //Detect collide with boxes
-    let isSphereCollideWithBoxes = false;
+
     const collideHandler = (event) => {
         let isSphereCollideWithBoxes = updateObjectsBoxes.some((box) => {
             return box.body.id === event.contact.bj.id;
         });
 
         if (isSphereCollideWithBoxes) {
-            console.log("Шар столкнулся");
-            // Условие выполнено, удаляем слушатель
             body.removeEventListener("collide", collideHandler);
             removeSpringConstraints();
             addSpeheresToWorld();
+            game?.checkAnswer(randomColor);
         }
     };
 
@@ -278,7 +288,7 @@ const addSpeheresToWorld = () => {
 };
 
 const createWallsFromBoxes = () => {
-    let boxCount = 200;
+    let boxCount = 56;
 
     createWall(4, 5, { x: 0, y: 0, z: 0 });
     createWall(4, 5, { x: 0, y: 0, z: boxSize.d * -3 });
@@ -298,8 +308,8 @@ const springConstraints = [];
 
 // Create spring constraints
 const createSpringConstraints = () => {
-    const springConstant = 0.1; // Константа пружины
-    const damping = 0.01; // Параметр демпфирования
+    const springConstant = 0.1;
+    const damping = 0.01;
 
     for (let i = 0; i < updateObjectsBoxes.length; i++) {
         for (let j = i + 1; j < updateObjectsBoxes.length; j++) {
@@ -307,12 +317,11 @@ const createSpringConstraints = () => {
             const bodyB = updateObjectsBoxes[j].body;
 
             const constraint = new CANNON.Spring(bodyA, bodyB, {
-                restLength: 0, // Длина пружины в покое
-                stiffness: springConstant, // Жесткость пружины
-                damping: damping, // Демпфирование
+                restLength: 0,
+                stiffness: springConstant,
+                damping: damping,
             });
 
-            // Добавление ограничителя пружины в массив
             springConstraints.push(constraint);
         }
     }
@@ -338,6 +347,7 @@ const removeSpringConstraints = () => {
 /**
  * Fill spheres in the box
  */
+let randomColor = 0;
 const fillSpheres = () => {
     const countWidth = 5;
     const countHeight = 6;
@@ -345,8 +355,8 @@ const fillSpheres = () => {
     const allCount = countWidth * countHeight * countDepth;
     const sphereSize = 0.15;
 
-    let color = Math.round(Math.random() * 3);
-    defaultSpheresMaterial.color = spheresColors[color];
+    randomColor = Math.round(Math.random() * 2);
+    defaultSpheresMaterial.color = spheresColors[randomColor].value;
 
     for (let i = 0; i < allCount; i++) {
         let shiftX = sphereSize * 2 - (countWidth / 2) * sphereSize * 2;
@@ -356,13 +366,9 @@ const fillSpheres = () => {
         let z = -sphereSize + Math.floor(i / (countWidth * countHeight)) * sphereSize * 2;
 
         let position = { x: x + shiftX, y, z: z + shiftZ };
-        console.log(color);
         createSphere(position, sphereSize);
     }
 };
-
-createWallsFromBoxes();
-fillSpheres();
 
 /**
  * Lights
@@ -398,10 +404,9 @@ window.addEventListener("resize", () => {
 const camera = new THREE.PerspectiveCamera(75, canvasSize.width / canvasSize.height, 0.1, 100);
 camera.position.set(0, 2, 10);
 
-debugObj.startShotBall = () => {
-    createShotBall();
-};
-gui.add(debugObj, "startShotBall").name("Start Shot Ball");
+canvas.addEventListener("click", (e) => {
+    createShotBall(e);
+});
 
 /**
  * Controls
@@ -425,6 +430,33 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor("#edf5ff");
 
 stats.init(renderer);
+
+/**
+ * Reset Scene
+ */
+const resetScene = () => {
+    for (const object of updateObjectsBoxes) {
+        //Remove body
+        /*  object.body.removeEventListener("collide", throttlePlaySound);
+        object.body.removeEventListener("collide", throttlePlayBallSound); */
+        world.removeBody(object.body);
+        //Remove mesh
+        scene.remove(object.mesh);
+    }
+    for (const object of updateObjectsSpheres) {
+        //Remove body
+        /*  object.body.removeEventListener("collide", throttlePlaySound);
+        object.body.removeEventListener("collide", throttlePlayBallSound); */
+        world.removeBody(object.body);
+        //Remove mesh
+        scene.remove(object.mesh);
+    }
+
+    updateObjectsBoxes = [];
+    updateObjectsSpheres = [];
+
+    console.log(updateObjectsBoxes);
+};
 
 /**
  * Animate

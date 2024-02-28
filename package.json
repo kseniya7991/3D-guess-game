@@ -10,7 +10,8 @@
   "author": "kseniya",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.11.20"
+    "@types/node": "^20.11.20",
+    "sass": "^1.71.1"
   },
   "dependencies": {
     "cannon-es": "^0.20.0",

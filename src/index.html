@@ -1,13 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Bowling</title>
-    <link rel="stylesheet" href="./style.css">
-</head>
-<body>
-    <canvas class="webgl"></canvas>
-    <script type="module" src="./script.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>3D Bowling</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&family=Bungee+Shade&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <div class="game js-game">
+            <div class="game__score-wrap">Score: <span class="js-game__score game__score">0</span></div>
+            <div class="game__guess-wrap js-game__guess">
+                <span class="game__guess-title"> Try to guess the color </span>
+                <ul class="game__guess-colors js-game__colors">
+                    <li class="game__guess-color guess-color js-game__color">
+                        <div class="guess-color__color"></div>
+                        <div class="guess-color__text">green</div>
+                    </li>
+                    <li class="game__guess-color guess-color js-game__color">
+                        <div class="guess-color__color"></div>
+                        <div class="guess-color__text">pink</div>
+                    </li>
+                    <li class="game__guess-color guess-color js-game__color">
+                        <div class="guess-color__color"></div>
+                        <div class="guess-color__text">blue</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <canvas class="webgl"></canvas>
+        <script type="module" src="./scripts/script.js"></script>
+    </body>
 </html>

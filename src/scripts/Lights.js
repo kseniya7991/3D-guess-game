@@ -7,7 +7,7 @@ export const ambientLight = new THREE.AmbientLight(0xffffff, 1);
 export const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
 directionalLight.position.set(10, 10, 10);
 directionalLight.castShadow = true;
-directionalLight.shadow.mapSize.set(1024, 1024);
+directionalLight.shadow.mapSize.set(1024 * 2, 1024 * 2);
 directionalLight.shadow.camera.far = 28;
 directionalLight.shadow.camera.near = 2;
 directionalLight.shadow.camera.left = -12;
