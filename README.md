@@ -37,9 +37,9 @@ $ npm i
 
 To start the development server, run the following command:
 
-````sh
+```sh
 npm run dev
-```stats-gl
+```
 
 ### Build
 
@@ -47,7 +47,7 @@ To build the production version, run the following command:
 
 ```sh
 npm run build
-````
+```
 
 ## Project Developer
 
