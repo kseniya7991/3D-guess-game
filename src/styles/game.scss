@@ -10,6 +10,14 @@
         display: flex;
         min-width: 80px;
 
+        transform-origin: left center;
+        transform: scale(1);
+
+        color: black;
+
+        transition-property: transform, color;
+        transition-duration: 0.4s;
+
         &-wrap {
             display: flex;
             align-items: center;
@@ -22,6 +30,37 @@
             z-index: 2;
 
             font-size: 50px;
+
+            transition-property: transform, color;
+            transition-duration: 0.4s;
+
+            &.active {
+                .game__score {
+                    transform: scale(2);
+                    color: rgb(0, 255, 0);
+                }
+            }
+
+            &.error {
+                animation: errorAnimation 0.5s ease-in-out 0s 1 forwards;
+
+                .game__score {
+                    transform: scale(2);
+                    animation: errorAnimation 0.5s ease-in-out 0s 1 forwards;
+                }
+            }
+
+            @keyframes errorAnimation {
+                0%,
+                50%,
+                100% {
+                    color: rgb(255, 2, 2);
+                }
+                25%,
+                75% {
+                    color: black;
+                }
+            }
         }
     }
 
@@ -30,7 +69,7 @@
             position: fixed;
             inset: 0;
             z-index: 5;
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0, 0, 0, 0.4);
 
             display: flex;
             flex-direction: column;

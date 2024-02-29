@@ -6,6 +6,11 @@ import CannonDebugger from "cannon-es-debugger";
 import Stats from "stats-gl";
 import "../styles/index.scss";
 
+//Import Sounds
+import { playHitSound } from "./Sounds";
+
+// import { throttle } from "./utils";
+
 //Import Lights
 import { directionalLight, ambientLight, directionalLightHelper } from "./Lights";
 
@@ -206,7 +211,7 @@ const createBoxes = (count) => {
  * Create a simple sphere
  * @returns
  */
-const createSphere = (position, size, mass = 0.1) => {
+const createSphere = (position, size, i, mass = 0.1) => {
     const sphereMesh = new THREE.Mesh(sphereGeometry, defaultSpheresMaterial);
 
     sphereMesh.castShadow = true;
@@ -222,6 +227,8 @@ const createSphere = (position, size, mass = 0.1) => {
         shape,
     });
 
+    if (i % 5 === 0) body.addEventListener("collide", throttlePlaySound);
+
     updateObjectsSpheres.push({
         mesh: sphereMesh,
         body,
@@ -231,13 +238,18 @@ const createSphere = (position, size, mass = 0.1) => {
 /**
  * Created a shot ball with force
  */
+let sphereShotBall = null;
 const createShotBall = (e) => {
     let targetEl = e.target;
     if (targetEl.closest(".lil-gui")) return;
+
+    //X position
     let mouseX = e.clientX;
     const xPosition = (mouseX * floorSize.width) / canvasSize.width - floorSize.width / 2;
     const size = 0.7;
+
     let position = { x: xPosition, y: 0.9, z: 5 };
+
     //Mesh
     const sphereMesh = new THREE.Mesh(sphereGeometry, defaultSphereBallMaterial);
     sphereMesh.castShadow = true;
@@ -255,6 +267,7 @@ const createShotBall = (e) => {
         position: new CANNON.Vec3(position.x, position.y, position.z),
         shape,
     });
+    sphereShotBall = body;
     body.applyLocalForce(new CANNON.Vec3(0, 0, -60000), new CANNON.Vec3(0, 0, 0));
 
     //Detect collide with boxes
@@ -268,11 +281,14 @@ const createShotBall = (e) => {
             body.removeEventListener("collide", collideHandler);
             removeSpringConstraints();
             addSpeheresToWorld();
+
             game?.checkAnswer(randomColor);
         }
     };
 
+    body.addEventListener("collide", throttlePlayBallSound);
     body.addEventListener("collide", collideHandler);
+
     world.addBody(body);
 
     updateObjectsSpheres.push({
@@ -299,6 +315,63 @@ const createWallsFromBoxes = () => {
     createBoxes(boxCount);
 
     createSpringConstraints();
+};
+
+/**
+ * Sounds
+ */
+const sounds = [
+    new Audio("/sounds/hit.mp3"),
+    new Audio("/sounds/hit3.wav"),
+    new Audio("/sounds/hit4.mp3"),
+    new Audio("/sounds/ball.wav"),
+    new Audio("/sounds/golf-ball.wav"),
+];
+
+const throttle = (func, ms) => {
+    let isThrottled = false,
+        savedArgs,
+        savedThis;
+
+    function wrapper() {
+        if (isThrottled) {
+            savedArgs = arguments;
+            savedThis = this;
+            return;
+        }
+
+        func.apply(this, arguments);
+
+        isThrottled = true;
+
+        setTimeout(function () {
+            isThrottled = false;
+            if (savedArgs) {
+                wrapper.apply(savedThis, savedArgs);
+                savedArgs = savedThis = null;
+            }
+        }, ms);
+    }
+
+    return wrapper;
+};
+
+/**
+ * Play Sounds Functions
+ * @param {*} collision
+ */
+/* const playBallSound = (collision) => {
+    playHitSound(collision, sphereShotBall, floorBody, true);
+}; */
+const playSound = (collision, isShotBall = false) => {
+    playHitSound(collision, sphereShotBall, floorBody);
+};
+
+const throttlePlaySound = (event) => {
+    throttle(playSound(event), 30);
+};
+const throttlePlayBallSound = (event) => {
+    throttle(playSound(event, true), 30);
 };
 
 /**
@@ -355,7 +428,8 @@ const fillSpheres = () => {
     const allCount = countWidth * countHeight * countDepth;
     const sphereSize = 0.15;
 
-    randomColor = Math.round(Math.random() * 2);
+    // randomColor = Math.round(Math.random() * 2);
+    randomColor = 0;
     defaultSpheresMaterial.color = spheresColors[randomColor].value;
 
     for (let i = 0; i < allCount; i++) {
@@ -366,7 +440,7 @@ const fillSpheres = () => {
         let z = -sphereSize + Math.floor(i / (countWidth * countHeight)) * sphereSize * 2;
 
         let position = { x: x + shiftX, y, z: z + shiftZ };
-        createSphere(position, sphereSize);
+        createSphere(position, sphereSize, i);
     }
 };
 
@@ -437,16 +511,17 @@ stats.init(renderer);
 const resetScene = () => {
     for (const object of updateObjectsBoxes) {
         //Remove body
-        /*  object.body.removeEventListener("collide", throttlePlaySound);
-        object.body.removeEventListener("collide", throttlePlayBallSound); */
+        object.body.removeEventListener("collide", throttlePlaySound);
+        object.body.removeEventListener("collide", throttlePlayBallSound);
         world.removeBody(object.body);
+
         //Remove mesh
         scene.remove(object.mesh);
     }
     for (const object of updateObjectsSpheres) {
         //Remove body
-        /*  object.body.removeEventListener("collide", throttlePlaySound);
-        object.body.removeEventListener("collide", throttlePlayBallSound); */
+        object.body.removeEventListener("collide", throttlePlaySound);
+        object.body.removeEventListener("collide", throttlePlayBallSound);
         world.removeBody(object.body);
         //Remove mesh
         scene.remove(object.mesh);
@@ -454,8 +529,6 @@ const resetScene = () => {
 
     updateObjectsBoxes = [];
     updateObjectsSpheres = [];
-
-    console.log(updateObjectsBoxes);
 };
 
 /**
