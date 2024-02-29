@@ -1,11 +1,12 @@
 {
-  "name": "bowling-three",
+  "name": "3d-guess-game",
   "version": "1.0.0",
-  "description": "3D Болуинг на библиотеке Three.js с использованием физики Physi.js",
+  "description": "A 3D game built on the Three.js library with the use of the cannon.js physics engine.",
   "main": "vite.confog.js",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build"
+    "build": "vite build",
+    "deploy": "vercel --prod"
   },
   "author": "kseniya",
   "license": "ISC",
@@ -19,6 +20,7 @@
     "lil-gui": "^0.19.1",
     "stats-gl": "^2.0.1",
     "three": "^0.161.0",
+    "vercel": "^33.5.3",
     "vite": "^5.1.4"
   }
 }

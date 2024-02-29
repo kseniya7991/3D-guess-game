@@ -1,38 +1,60 @@
-# 3D Боулинг
-3D Болуинг на библиотеке Three.js с использованием физики Physi.js 
+# 3D Guessing Game
 
-## Технологии
-- [Three.js](https://threejs.org/)
-- [Physi.js](https://www.npmjs.com/package/physijs)
+A 3D game built on the Three.js library with the use of the cannon.js physics engine.
 
+## Gameplay
 
-## Разработка
+At the beginning of the game, the user selects a color.
+The player then break a box made up of smaller boxes filled with balls of a specific color.
+If the color is guessed correctly, the player earns +1 point.
+Otherwise, the score is reset to zero.
 
-### Требования
-Для установки и запуска проекта, необходим [NodeJS](https://nodejs.org/) v8+.
+## Live
 
-### Установка зависимостей
-Для установки зависимостей, выполните команду:
+The game is [live here](https://3d-guess-game.vercel.app/)
+
+## Technologies
+
+-   [Three.js](https://threejs.org/)
+-   [Physi.js](https://www.npmjs.com/package/physijs)
+
+## Additional Resources
+
+-   [Three.js](https://threejs.org/)
+-   [Physi.js](https://www.npmjs.com/package/physijs)
+
+## Development
+
+### Installation
+
+To install the dependencies, run the following command:
+
 ```sh
 $ npm i
 ```
 
-### Запуск Development сервера
-Чтобы запустить сервер для разработки, выполните команду:
-```sh
-npm run dev
-```
+### Run Development Server
 
-### Создание билда
-Чтобы выполнить production сборку, выполните команду: 
+To start the development server, run the following command:
+
+````sh
+npm run dev
+```stats-gl
+
+### Build
+
+To build the production version, run the following command:
+
 ```sh
 npm run build
-```
+````
 
-## Команда проекта
-Оставьте пользователям контакты и инструкции, как связаться с командой разработки.
+## Project Developer
 
-- Ксения Стойчикова — Creative Front-End Developer
+Open to suggestions for project functionality and improvements.
 
-## Источники
-- [threejs-journey](https://threejs-journey.com/)
+**Ksenia Stoichykava** — _Creative Front-End Developer_
+
+## Sources
+
+-   [threejs-journey](https://threejs-journey.com/)
