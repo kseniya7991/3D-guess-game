@@ -1,4 +1,5 @@
-const GAME_CLASS = "js-game";
+import { SoundSwitch } from "./Sounds";
+export const GAME_CLASS = "js-game";
 
 const GAME_SELECTOR = ".js-game";
 
@@ -8,6 +9,7 @@ const GAME_COLORS_SELECTOR = `.${GAME_CLASS}__colors`;
 const GAME_COLOR_SELECTOR = `.${GAME_CLASS}__color`;
 const GAME_GUESS_SELECTOR = `.${GAME_CLASS}__guess`;
 const GAME_TITLE_SELECTOR = `.${GAME_CLASS}__title`;
+const GAME_SOUND_SELECTOR = `.${GAME_CLASS}__sound`;
 
 const HOVER_CLASS = "hover";
 const ACTIVE_CLASS = "active";
@@ -24,15 +26,20 @@ export class Game {
 
         this.scoreEl = document.querySelector(GAME_SCORE_SELECTOR);
         this.scoreWrap = document.querySelector(GAME_SCORE_WRAP_SELECTOR);
+
         this.colors = document.querySelector(GAME_COLORS_SELECTOR);
         this.colorsList = document.querySelectorAll(GAME_COLOR_SELECTOR);
-        this.guessWrap = document.querySelector(GAME_GUESS_SELECTOR);
 
+        this.guessWrap = document.querySelector(GAME_GUESS_SELECTOR);
         this.title = document.querySelector(GAME_TITLE_SELECTOR);
 
+        this.soundSwitch = document.querySelector(GAME_SOUND_SELECTOR);
+
+        this.sounds = [new Audio("/sounds/win.wav"), new Audio("/sounds/fail.mp3")];
+
         this.selectedColor = null;
-        this.score = 0;
         this.scoreTimer = undefined;
+        this.score = 0;
 
         this.stepCounter = 0;
         this.maxStep = 1;
@@ -58,8 +65,16 @@ export class Game {
 
                 let selectColorEvent = new Event("selectColor");
                 this.wrap.dispatchEvent(selectColorEvent);
+
+                this.#resetSounds();
             });
         });
+
+        this.#initSoundSwitch();
+    };
+
+    #initSoundSwitch = () => {
+        new SoundSwitch(this.soundSwitch);
     };
 
     #hideGuesser = () => {
@@ -74,9 +89,9 @@ export class Game {
         this.stepCounter += 1;
         if (this.stepCounter !== this.maxStep) return;
         if (color === this.selectedColor) {
-            this.increaseScore();
+            this.#increaseScore();
         } else {
-            this.resetScore();
+            this.#resetScore();
         }
 
         setTimeout(() => {
@@ -84,17 +99,17 @@ export class Game {
         }, 1000);
     };
 
-    increaseScore = () => {
+    #increaseScore = () => {
         this.score += 1;
-        this.updateScoreEl(false);
+        this.#updateScoreEl(false);
     };
 
-    resetScore = () => {
+    #resetScore = () => {
         this.score = 0;
-        this.updateScoreEl();
+        this.#updateScoreEl();
     };
 
-    updateScoreEl = (isError = true) => {
+    #updateScoreEl = (isError = true) => {
         clearTimeout(this.scoreTimer);
 
         let statusClass = isError ? ERROR_CLASS : ACTIVE_CLASS;
@@ -109,10 +124,11 @@ export class Game {
             }, 500);
         }
 
-        this.updateTitle();
+        this.#updateTitle();
+        this.#playSounds(isError);
     };
 
-    updateTitle = () => {
+    #updateTitle = () => {
         if (!this.title) return;
         let titleText = DEFAULT_TITLE;
 
@@ -149,6 +165,22 @@ export class Game {
                 break;
         }
         this.title.textContent = titleText;
+    };
+
+    #playSounds = (isError) => {
+        let soundId = isError ? 1 : 0;
+        let sound = this.sounds[soundId];
+        console.log(sound);
+        sound.currentTime = 0;
+        sound.volume = 0.5;
+        sound.play();
+    };
+
+    #resetSounds = () => {
+        this.sounds.forEach((el) => {
+            el.currentTime = 0;
+            el.pause();
+        });
     };
 }
 

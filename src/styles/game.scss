@@ -173,4 +173,76 @@
             margin-top: 10px;
         }
     }
+
+    $sound-size: 40px;
+    &__sound {
+        width: $sound-size;
+        height: $sound-size;
+        position: fixed;
+        z-index: 10;
+        bottom: 50px;
+        left: 50px;
+
+        border-radius: 50%;
+        overflow: hidden;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        opacity: 0.5;
+
+        transition-property: opacity;
+        transition-timing-function: ease-in-out;
+        transition-duration: 0.3s;
+
+        cursor: pointer;
+
+        &.active {
+            &::after {
+                width: 0;
+            }
+        }
+
+        &:hover {
+            opacity: 1;
+        }
+
+        svg {
+            width: calc($sound-size - 10px);
+            height: calc($sound-size - 10px);
+            padding: 5px;
+        }
+
+        &::before,
+        &::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        &::before {
+            width: calc($sound-size - 4px);
+            height: calc($sound-size - 4px);
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        &::after {
+            left: 0;
+
+            width: 100%;
+            height: 2px;
+
+            background-color: white;
+            transform: rotate(-45deg) translate(-5px, 14px);
+
+            transform-origin: left center;
+
+            transition-property: width, opacity;
+            transition-timing-function: ease-in-out;
+            transition-duration: 0.3s;
+        }
+    }
 }

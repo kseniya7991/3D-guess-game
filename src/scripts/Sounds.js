@@ -1,3 +1,25 @@
+import { GAME_CLASS } from "./Game";
+const ACTIVE_CLASS = "active";
+
+let isMuted = false;
+
+/**
+ * Sound Switch
+ */
+export class SoundSwitch {
+    constructor(wrap) {
+        this.wrap = wrap;
+        this.initComponent();
+    }
+
+    initComponent = () => {
+        this.wrap.addEventListener("click", () => {
+            this.wrap.classList.toggle(ACTIVE_CLASS);
+            isMuted = !this.wrap.classList.contains(ACTIVE_CLASS);
+        });
+    };
+}
+
 /**
  * Sounds
  */
@@ -55,7 +77,7 @@ const shouldPlaySound = (impactStrength, isCollideWithFloor, isShotBall) => {
 
 const playSound = (soundId, volume) => {
     sounds[soundId].currentTime = 0;
-    sounds[soundId].volume = volume;
+    sounds[soundId].volume = isMuted ? 0 : volume;
     sounds[soundId].play();
 };
 

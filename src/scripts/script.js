@@ -9,8 +9,6 @@ import "../styles/index.scss";
 //Import Sounds
 import { playHitSound } from "./Sounds";
 
-// import { throttle } from "./utils";
-
 //Import Lights
 import { directionalLight, ambientLight, directionalLightHelper } from "./Lights";
 
