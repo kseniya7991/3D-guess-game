@@ -1,23 +1,21 @@
-*
-{
+* {
     margin: 0;
     padding: 0;
 }
 
 html,
-body
-{
+body {
     overflow: hidden;
 }
 
-.webgl
-{
+.webgl {
     position: fixed;
     top: 0;
     left: 0;
     outline: none;
 }
 
-
-
-
+.lil-gui {
+    top: unset !important;
+    bottom: 30px;
+}

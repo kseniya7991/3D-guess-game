@@ -18,6 +18,10 @@ import { boxTexture, sphereTexture } from "./Textures";
 //Import Game
 import { initGame } from "./Game";
 
+window.addEventListener("load", () => {
+    document.body.style.opacity = "1";
+});
+
 const game = initGame();
 game?.wrap.addEventListener("selectColor", () => {
     resetScene();
@@ -35,6 +39,15 @@ const debugObj = {};
 const stats = new Stats();
 // append the stats container to the body of the document
 document.body.appendChild(stats.dom);
+
+debugObj.stats = true;
+gui.add(debugObj, "stats").onChange((value) => {
+    if (value) {
+        document.body.appendChild(stats.dom);
+    } else {
+        stats.dom.remove();
+    }
+});
 
 /**
  * Base
