@@ -2,6 +2,8 @@
 
 A 3D game built on the Three.js library with the use of the cannon.js physics engine.
 
+![game](https://github.com/kseniya7991/bowling-three-js/blob/master/game.png)
+
 ## Gameplay
 
 At the beginning of the game, the user selects a color.
