@@ -17,6 +17,7 @@ import { boxTexture, sphereTexture } from "./Textures";
 
 //Import Game
 import { initGame } from "./Game";
+import { NULL } from "sass";
 
 window.addEventListener("load", () => {
     document.body.style.opacity = "1";
@@ -498,9 +499,9 @@ canvas.addEventListener("click", (e) => {
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.mouseButtons = {
-    LEFT: THREE.MOUSE.ROTATE,
+    LEFT: null,
     MIDDLE: THREE.MOUSE.DOLLY,
-    RIGHT: THREE.MOUSE.PAN,
+    RIGHT: null,
 };
 /**
  * Render
