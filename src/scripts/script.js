@@ -439,8 +439,7 @@ const fillSpheres = () => {
     const allCount = countWidth * countHeight * countDepth;
     const sphereSize = 0.15;
 
-    // randomColor = Math.round(Math.random() * 2);
-    randomColor = 0;
+    randomColor = Math.round(Math.random() * 2);
     defaultSpheresMaterial.color = spheresColors[randomColor].value;
 
     for (let i = 0; i < allCount; i++) {
