@@ -1,4 +1,4 @@
-import { SoundSwitch } from "./Sounds";
+import { SoundSwitch, SWITCH_EVENT } from "./Sounds";
 export const GAME_CLASS = "js-game";
 
 const GAME_SELECTOR = ".js-game";
@@ -33,7 +33,8 @@ export class Game {
         this.guessWrap = document.querySelector(GAME_GUESS_SELECTOR);
         this.title = document.querySelector(GAME_TITLE_SELECTOR);
 
-        this.soundSwitch = document.querySelector(GAME_SOUND_SELECTOR);
+        this.soundSwitchEl = document.querySelector(GAME_SOUND_SELECTOR);
+        this.soundSwitch = null;
 
         this.sounds = [new Audio("/sounds/win.wav"), new Audio("/sounds/fail.mp3")];
 
@@ -74,7 +75,10 @@ export class Game {
     };
 
     #initSoundSwitch = () => {
-        new SoundSwitch(this.soundSwitch);
+        this.soundSwitch = new SoundSwitch(this.soundSwitchEl);
+        this.soundSwitch.wrap.addEventListener(SWITCH_EVENT, () => {
+            this.#resetSounds();
+        });
     };
 
     #hideGuesser = () => {
@@ -170,9 +174,11 @@ export class Game {
     #playSounds = (isError) => {
         let soundId = isError ? 1 : 0;
         let sound = this.sounds[soundId];
-        console.log(sound);
         sound.currentTime = 0;
-        sound.volume = 0.5;
+
+        let volume = 0.5;
+        sound.volume = this.soundSwitch?.isMuted ? 0 : volume;
+
         sound.play();
     };
 

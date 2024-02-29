@@ -3,12 +3,15 @@ const ACTIVE_CLASS = "active";
 
 let isMuted = false;
 
+export const SWITCH_EVENT = "soundSwitch";
+
 /**
  * Sound Switch
  */
 export class SoundSwitch {
     constructor(wrap) {
         this.wrap = wrap;
+        this.isMuted = isMuted;
         this.initComponent();
     }
 
@@ -16,6 +19,10 @@ export class SoundSwitch {
         this.wrap.addEventListener("click", () => {
             this.wrap.classList.toggle(ACTIVE_CLASS);
             isMuted = !this.wrap.classList.contains(ACTIVE_CLASS);
+            this.isMuted = isMuted;
+
+            let soundSwitchEvent = new Event(SWITCH_EVENT);
+            this.wrap.dispatchEvent(soundSwitchEvent);
         });
     };
 }
